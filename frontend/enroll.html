@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Keystroke Enrollment - Keystroke MFA</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        .enroll-card {
+            max-width: 700px;
+            margin: 40px auto;
+            background: white;
+            padding: 40px;
+            border-radius: 14px;
+            box-shadow: 0 8px 30px rgba(0,0,0,.10);
+        }
+
+        .progress-container {
+            margin: 25px 0;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 24px;
+            background: #e5e7eb;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: #2563eb;
+            transition: width .3s ease;
+        }
+
+        .sample-text {
+            text-align: center;
+            margin-top: 12px;
+            color: #64748b;
+        }
+
+        .form-group {
+            margin-top: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        #password {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        #password:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37,99,235,.15);
+        }
+
+        #submitBtn {
+            width: 100%;
+            margin-top: 20px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        #submitBtn:disabled {
+            opacity: .6;
+            cursor: not-allowed;
+        }
+
+        .message {
+            display: none;
+            margin-top: 20px;
+            padding: 14px;
+            border-radius: 8px;
+        }
+
+        .message.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .message.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .info-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            color: #475569;
+        }
+
+        .info-box h3 {
+            color: #1e293b;
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container">
+        <div class="nav-brand">
+            <a href="/">Keystroke MFA</a>
+        </div>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/logout">Logout</a>
+        </div>
+    </div>
+</nav>
+
+
+<main class="main-content">
+
+    <div class="container">
+
+        <div class="enroll-card">
+
+            <h1>Keystroke Enrollment</h1>
+
+            <p>
+                Complete your enrollment by typing your password
+                15 times.
+            </p>
+
+
+            <div class="progress-container">
+
+                <div class="progress-bar">
+                    <div id="progressFill"
+                         class="progress-fill">
+                    </div>
+                </div>
+
+                <div id="sampleText"
+                     class="sample-text">
+                    0 / 15 samples collected
+                </div>
+
+            </div>
+
+
+            <form id="enrollForm">
+
+                <div class="form-group">
+
+                    <label for="password">
+                        Type Your Password
+                    </label>
+
+                    <input
+                        type="password"
+                        id="password"
+                        name="password"
+                        autocomplete="off"
+                        placeholder="Type your password naturally"
+                        required
+                    >
+
+                    <small>
+                        Type naturally — your typing pattern is
+                        being analyzed.
+                    </small>
+
+                </div>
+
+
+                <button
+                    id="submitBtn"
+                    type="submit">
+
+                    Submit Sample
+
+                </button>
+
+            </form>
+
+
+            <div id="message"
+                 class="message">
+            </div>
+
+
+            <div class="info-box">
+
+                <h3>Why 15 times?</h3>
+
+                <p>
+                    We need multiple samples to build an accurate
+                    model of your unique typing pattern.
+                </p>
+
+                <h3>Tips for better enrollment:</h3>
+
+                <ul>
+                    <li>Type naturally and consistently.</li>
+                    <li>Use the same password every time.</li>
+                    <li>Do not paste the password.</li>
+                    <li>Do not type unusually fast or slow.</li>
+                </ul>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form =
+        document.getElementById("enrollForm");
+
+    const password =
+        document.getElementById("password");
+
+    const submitBtn =
+        document.getElementById("submitBtn");
+
+    const progressFill =
+        document.getElementById("progressFill");
+
+    const sampleText =
+        document.getElementById("sampleText");
+
+    const message =
+        document.getElementById("message");
+
+
+    const REQUIRED_SAMPLES = 15;
+
+
+    let events = [];
+
+    const activeKeys = new Map();
+
+
+    // -------------------------------------------------
+    // MESSAGE
+    // -------------------------------------------------
+
+    function showMessage(text, type) {
+
+        message.textContent = text;
+
+        message.className =
+            "message " + type;
+
+        message.style.display = "block";
+
+    }
+
+
+    function clearMessage() {
+
+        message.textContent = "";
+
+        message.className = "message";
+
+        message.style.display = "none";
+
+    }
+
+
+    // -------------------------------------------------
+    // RESET SAMPLE
+    // -------------------------------------------------
+
+    password.addEventListener("focus", function () {
+
+        events = [];
+
+        activeKeys.clear();
+
+        clearMessage();
+
+    });
+
+
+    // -------------------------------------------------
+    // KEY DOWN
+    // -------------------------------------------------
+
+    password.addEventListener("keydown", function (e) {
+
+        if (
+            e.ctrlKey ||
+            e.altKey ||
+            e.metaKey ||
+            e.key === "Shift" ||
+            e.key === "Control" ||
+            e.key === "Alt" ||
+            e.key === "Meta" ||
+            e.key === "CapsLock" ||
+            e.key === "Tab" ||
+            e.key === "Escape"
+        ) {
+            return;
+        }
+
+
+        if (e.repeat) {
+            return;
+        }
+
+
+        const code =
+            e.code || e.key;
+
+
+        if (activeKeys.has(code)) {
+            return;
+        }
+
+
+        activeKeys.set(code, {
+
+            key: e.key,
+
+            code: code,
+
+            down: performance.now()
+
+        });
+
+    });
+
+
+    // -------------------------------------------------
+    // KEY UP
+    // -------------------------------------------------
+
+    password.addEventListener("keyup", function (e) {
+
+        const code =
+            e.code || e.key;
+
+
+        const active =
+            activeKeys.get(code);
+
+
+        if (!active) {
+            return;
+        }
+
+
+        const up =
+            performance.now();
+
+
+        if (up > active.down) {
+
+            events.push({
+
+                key: active.key,
+
+                code: active.code,
+
+                down: active.down,
+
+                up: up
+
+            });
+
+        }
+
+
+        activeKeys.delete(code);
+
+    });
+
+
+    // -------------------------------------------------
+    // CLEAR STUCK KEYS
+    // -------------------------------------------------
+
+    window.addEventListener("blur", function () {
+
+        activeKeys.clear();
+
+    });
+
+
+    document.addEventListener(
+        "visibilitychange",
+        function () {
+
+            if (document.hidden) {
+
+                activeKeys.clear();
+
+            }
+
+        }
+    );
+
+
+    // -------------------------------------------------
+    // SUBMIT SAMPLE
+    // -------------------------------------------------
+
+    form.addEventListener(
+        "submit",
+        async function (e) {
+
+            e.preventDefault();
+
+
+            clearMessage();
+
+
+            const pass =
+                password.value;
+
+
+            if (!pass) {
+
+                showMessage(
+                    "Please type your password.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // -----------------------------------------
+            // FINALIZE KEY CURRENTLY BEING PRESSED
+            // -----------------------------------------
+
+            const now =
+                performance.now();
+
+
+            for (
+                const [code, active]
+                of activeKeys.entries()
+            ) {
+
+                if (now > active.down) {
+
+                    events.push({
+
+                        key: active.key,
+
+                        code: active.code,
+
+                        down: active.down,
+
+                        up: now
+
+                    });
+
+                }
+
+            }
+
+
+            activeKeys.clear();
+
+
+            // -----------------------------------------
+            // VALIDATION
+            // -----------------------------------------
+
+            if (events.length < 2) {
+
+                showMessage(
+                    "Please type the password manually using the keyboard.",
+                    "error"
+                );
+
+                return;
+            }
+
+
+            // -----------------------------------------
+            // PAYLOAD
+            // -----------------------------------------
+
+            const payload = {
+
+                password: pass,
+
+                events: events
+
+            };
+
+
+            submitBtn.disabled = true;
+
+            submitBtn.textContent =
+                "Saving Sample...";
+
+
+            try {
+
+                console.log(
+                    "Sending enrollment sample:",
+                    payload
+                );
+
+
+                const response =
+                    await fetch("/enroll", {
+
+                        method: "POST",
+
+                        headers: {
+
+                            "Content-Type":
+                                "application/json"
+
+                        },
+
+                        body:
+                            JSON.stringify(payload)
+
+                    });
+
+
+                const result =
+                    await response.json();
+
+
+                console.log(
+                    "Enrollment response:",
+                    result
+                );
+
+
+                // -------------------------------------
+                // ERROR
+                // -------------------------------------
+
+                if (!response.ok) {
+
+                    showMessage(
+                        result.error ||
+                        "Failed to save sample.",
+                        "error"
+                    );
+
+                    return;
+                }
+
+
+                // -------------------------------------
+                // SUCCESS
+                // -------------------------------------
+
+                if (result.success) {
+
+                    const count =
+                        result.samples_collected;
+
+                    const required =
+                        result.required_samples ||
+                        REQUIRED_SAMPLES;
+
+
+                    const percent =
+                        Math.min(
+                            (count / required) * 100,
+                            100
+                        );
+
+
+                    progressFill.style.width =
+                        percent + "%";
+
+
+                    sampleText.textContent =
+                        count +
+                        " / " +
+                        required +
+                        " samples collected";
+
+
+                    password.value = "";
+
+                    events = [];
+
+
+                    if (result.enrollment_complete) {
+
+                        showMessage(
+                            "Enrollment complete! Your keystroke model has been created.",
+                            "success"
+                        );
+
+
+                        submitBtn.textContent =
+                            "Enrollment Complete";
+
+
+                        setTimeout(function () {
+
+                            window.location.href =
+                                "/dashboard";
+
+                        }, 1500);
+
+
+                        return;
+                    }
+
+
+                    showMessage(
+                        "Sample " +
+                        count +
+                        " saved successfully. Type your password again.",
+                        "success"
+                    );
+
+                }
+
+
+            } catch (error) {
+
+                console.error(
+                    "Enrollment error:",
+                    error
+                );
+
+
+                showMessage(
+                    "Unable to connect to the server.",
+                    "error"
+                );
+
+            } finally {
+
+                if (
+                    !submitBtn.textContent.includes(
+                        "Complete"
+                    )
+                ) {
+
+                    submitBtn.disabled = false;
+
+                    submitBtn.textContent =
+                        "Submit Sample";
+
+                }
+
+            }
+
+        }
+    );
+
+});
+
+</script>
+
+</body>
+</html>

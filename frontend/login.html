@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Login - Keystroke MFA</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: #ffffff;
+        }
+
+        .navbar {
+            background: rgba(15, 23, 42, 0.95);
+            padding: 18px 0;
+        }
+
+        .container {
+            width: min(1100px, 92%);
+            margin: auto;
+        }
+
+        .nav-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            color: white;
+            text-decoration: none;
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 25px;
+        }
+
+        .nav-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            color: white;
+        }
+
+        .login-wrapper {
+            min-height: calc(100vh - 75px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 440px;
+            background: rgba(255, 255, 255, 0.98);
+            color: #1e293b;
+            padding: 40px;
+            border-radius: 18px;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+        }
+
+        .login-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            border-radius: 50%;
+            background: #2563eb;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .login-card h1 {
+            text-align: center;
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .form-group input:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        #loginBtn {
+            width: 100%;
+            border: none;
+            padding: 14px;
+            border-radius: 9px;
+            background: #2563eb;
+            color: white;
+            font-size: 17px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        #loginBtn:hover {
+            background: #1d4ed8;
+        }
+
+        #loginBtn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .security-info {
+            margin-top: 25px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #eff6ff;
+            color: #1e40af;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .register-link {
+            text-align: center;
+            margin-top: 25px;
+            color: #64748b;
+        }
+
+        .register-link a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        #status {
+            display: none;
+            margin-bottom: 18px;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        #status.error {
+            display: block;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        #status.success {
+            display: block;
+            background: #dcfce7;
+            color: #166534;
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="container nav-content">
+
+        <a href="/" class="brand">
+            🔐 Keystroke MFA
+        </a>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/register">Register</a>
+        </div>
+
+    </div>
+</nav>
+
+
+<div class="login-wrapper">
+
+    <div class="login-card">
+
+        <div class="login-icon">
+            🔐
+        </div>
+
+        <h1>Welcome Back</h1>
+
+        <p class="subtitle">
+            Secure login with Keystroke Dynamics
+        </p>
+
+        <div id="status"></div>
+
+
+        <form id="loginForm">
+
+            <div class="form-group">
+
+                <label for="username">
+                    Username
+                </label>
+
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    autocomplete="username"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="password">
+                    Password
+                </label>
+
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Type your password"
+                    autocomplete="current-password"
+                    required
+                >
+
+            </div>
+
+
+            <button
+                type="submit"
+                id="loginBtn">
+                Login
+            </button>
+
+        </form>
+
+
+        <div class="security-info">
+            🔑 <strong>Behavioral Security</strong><br>
+            Your unique typing pattern is analyzed in addition
+            to your password for enhanced authentication.
+        </div>
+
+
+        <div class="register-link">
+            Don't have an account?
+            <a href="/register">Create an account</a>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+
+    const form = document.getElementById("loginForm");
+    const username = document.getElementById("username");
+    const password = document.getElementById("password");
+    const loginButton = document.getElementById("loginBtn");
+    const status = document.getElementById("status");
+
+    let events = [];
+    const activeKeys = new Map();
+
+
+    function showStatus(message, type = "error") {
+
+        status.textContent = message;
+        status.className = type;
+        status.style.display = "block";
+
+    }
+
+
+    function clearStatus() {
+
+        status.textContent = "";
+        status.className = "";
+        status.style.display = "none";
+
+    }
+
+
+    // Start a fresh typing sample
+    password.addEventListener("focus", function () {
+
+        events = [];
+        activeKeys.clear();
+        clearStatus();
+
+    });
+
+
+    // KEY DOWN
+    password.addEventListener("keydown", function (e) {
+
+        if (
+            e.ctrlKey ||
+            e.altKey ||
+            e.metaKey ||
+            e.key === "Shift" ||
+            e.key === "Control" ||
+            e.key === "Alt" ||
+            e.key === "Meta" ||
+            e.key === "CapsLock" ||
+            e.key === "Tab" ||
+            e.key === "Escape"
+        ) {
+            return;
+        }
+
+
+        if (e.repeat) {
+            return;
+        }
+
+
+        const code = e.code || e.key;
+
+
+        if (activeKeys.has(code)) {
+            return;
+        }
+
+
+        activeKeys.set(code, {
+            key: e.key,
+            code: code,
+            down: performance.now()
+        });
+
+    });
+
+
+    // KEY UP
+    password.addEventListener("keyup", function (e) {
+
+        const code = e.code || e.key;
+
+        const active = activeKeys.get(code);
+
+        if (!active) {
+            return;
+        }
+
+
+        const up = performance.now();
+
+
+        if (up > active.down) {
+
+            events.push({
+                key: active.key,
+                code: active.code,
+                down: active.down,
+                up: up
+            });
+
+        }
+
+
+        activeKeys.delete(code);
+
+    });
+
+
+    window.addEventListener("blur", function () {
+        activeKeys.clear();
+    });
+
+
+    document.addEventListener("visibilitychange", function () {
+
+        if (document.hidden) {
+            activeKeys.clear();
+        }
+
+    });
+
+
+    // FORM SUBMIT
+    form.addEventListener("submit", async function (e) {
+
+        e.preventDefault();
+
+        clearStatus();
+
+
+        const user = username.value.trim();
+        const pass = password.value;
+
+
+        if (!user || !pass) {
+
+            showStatus(
+                "Username and password are required."
+            );
+
+            return;
+        }
+
+
+        // Finalize keys still being held
+        const now = performance.now();
+
+
+        for (const [code, active] of activeKeys.entries()) {
+
+            if (now > active.down) {
+
+                events.push({
+                    key: active.key,
+                    code: active.code,
+                    down: active.down,
+                    up: now
+                });
+
+            }
+
+        }
+
+
+        activeKeys.clear();
+
+
+        if (events.length < 2) {
+
+            showStatus(
+                "Please type your password manually using the keyboard."
+            );
+
+            return;
+        }
+
+
+        const payload = {
+
+            username: user,
+
+            password: pass,
+
+            keystrokeData: {
+                events: events
+            }
+
+        };
+
+
+        loginButton.disabled = true;
+        loginButton.textContent = "Authenticating...";
+
+
+        try {
+
+            const response = await fetch("/api/login", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify(payload)
+
+            });
+
+
+            const result = await response.json();
+
+
+            console.log("Login response:", result);
+
+
+            // -------------------------------
+            // ENROLLMENT REQUIRED
+            // -------------------------------
+
+            if (result.redirect &&
+                result.error &&
+                result.redirect.includes("/enroll")) {
+
+                showStatus(
+                    result.error
+                );
+
+                setTimeout(function () {
+
+                    window.location.href = result.redirect;
+
+                }, 1500);
+
+                return;
+            }
+
+
+            // -------------------------------
+            // OTP REQUIRED
+            // -------------------------------
+
+            if (result.require_otp) {
+
+                let otpMessage =
+                    result.message ||
+                    "Enter the OTP sent to your email:";
+
+
+                // Development mode
+                if (result.code) {
+
+                    otpMessage +=
+                        "\n\nDevelopment OTP: " +
+                        result.code;
+
+                }
+
+
+                const otp = prompt(otpMessage);
+
+
+                if (!otp) {
+
+                    loginButton.disabled = false;
+                    loginButton.textContent = "Login";
+
+                    return;
+                }
+
+
+                payload.otpCode = otp.trim();
+
+
+                const otpResponse =
+                    await fetch("/api/login", {
+
+                        method: "POST",
+
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+
+                        body: JSON.stringify(payload)
+
+                    });
+
+
+                const otpResult =
+                    await otpResponse.json();
+
+
+                console.log(
+                    "OTP response:",
+                    otpResult
+                );
+
+
+                if (otpResult.success) {
+
+                    window.location.href =
+                        otpResult.redirect ||
+                        "/dashboard";
+
+                    return;
+                }
+
+
+                showStatus(
+                    otpResult.error ||
+                    "OTP verification failed."
+                );
+
+
+                loginButton.disabled = false;
+                loginButton.textContent = "Login";
+
+                return;
+            }
+
+
+            // -------------------------------
+            // SUCCESS
+            // -------------------------------
+
+            if (result.success) {
+
+                window.location.href =
+                    result.redirect ||
+                    "/dashboard";
+
+                return;
+            }
+
+
+            // -------------------------------
+            // ERROR
+            // -------------------------------
+
+            showStatus(
+                result.error ||
+                "Login failed. Please try again."
+            );
+
+
+        } catch (error) {
+
+            console.error(
+                "Login error:",
+                error
+            );
+
+
+            showStatus(
+                "Unable to connect to the server."
+            );
+
+        }
+
+
+        loginButton.disabled = false;
+        loginButton.textContent = "Login";
+
+    });
+
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Dashboard - Keystroke MFA</title>
+
+    <link rel="stylesheet" href="/css/style.css">
+
+    <style>
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .modal.hidden {
+            display: none !important;
+        }
+
+        .modal-content {
+            background: white;
+            width: min(450px, 90%);
+            border-radius: 12px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+        }
+
+        .close-modal {
+            border: none;
+            background: transparent;
+            font-size: 30px;
+            cursor: pointer;
+            color: #777;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: #111;
+        }
+
+        .modal-body input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px;
+            margin: 15px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 6px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 16px 22px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+        }
+
+        .notification.success {
+            background: #198754;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        .testing-code {
+            margin-top: 15px;
+            padding: 14px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+    </style>
+</head>
+
+
+<body>
+
+<nav class="navbar">
+
+    <div class="container">
+
+        <div class="nav-brand">
+            <a href="/">
+                Keystroke MFA
+            </a>
+        </div>
+
+        <div class="nav-links">
+            <a href="/dashboard">
+                Dashboard
+            </a>
+
+            <a href="/logout">
+                Logout
+            </a>
+        </div>
+
+    </div>
+
+</nav>
+
+
+<main class="main-content">
+
+    <div class="container">
+
+        <div class="dashboard-container">
+
+            <div class="dashboard-header">
+
+                <h1>
+                    Welcome, {{ username }}!
+                </h1>
+
+                <p class="dashboard-subtitle">
+                    Your keystroke authentication dashboard
+                </p>
+
+            </div>
+
+
+            <div class="dashboard-grid">
+
+
+                <!-- ENROLLMENT -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon">
+                        📊
+                    </div>
+
+                    <h3>
+                        Enrollment Status
+                    </h3>
+
+                    <div class="status-indicator
+                        {{ 'complete' if enrolled else 'incomplete' }}">
+
+                        {{ 'Complete' if enrolled else 'Incomplete' }}
+
+                    </div>
+
+                    <p class="card-text">
+
+                        {% if enrolled %}
+
+                            Your behavioral profile is active
+                            and ready for authentication.
+
+                        {% else %}
+
+                            You have collected
+                            {{ sample_count }}
+                            samples.
+
+                            {{ required_samples - sample_count }}
+                            more needed.
+
+                        {% endif %}
+
+                    </p>
+
+
+                    {% if not enrolled %}
+
+                        <a
+                            href="/enroll"
+                            class="btn btn-primary"
+                        >
+                            Complete Enrollment
+                        </a>
+
+                    {% endif %}
+
+                </div>
+
+
+                <!-- SAMPLES -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon">
+                        📈
+                    </div>
+
+                    <h3>
+                        Typing Samples
+                    </h3>
+
+                    <div class="stat-number">
+                        {{ sample_count }}
+                    </div>
+
+                    <p class="card-text">
+                        Total samples collected for your
+                        behavioral profile.
+                    </p>
+
+                </div>
+
+
+                <!-- LAST ACTIVITY -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon">
+                        🕐
+                    </div>
+
+                    <h3>
+                        Last Activity
+                    </h3>
+
+                    <div class="stat-text">
+
+                        {% if last_sample %}
+
+                            {{ last_sample }}
+
+                        {% else %}
+
+                            No activity yet
+
+                        {% endif %}
+
+                    </div>
+
+                    <p class="card-text">
+                        Most recent sample collection time.
+                    </p>
+
+                </div>
+
+
+                <!-- SECURITY -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon">
+                        🔐
+                    </div>
+
+                    <h3>
+                        Security Status
+                    </h3>
+
+                    <div class="status-indicator complete">
+                        Active
+                    </div>
+
+                    <p class="card-text">
+
+                        {% if enrolled %}
+
+                            Your account is protected with
+                            keystroke dynamics.
+
+                        {% else %}
+
+                            Complete enrollment to enable
+                            full security features.
+
+                        {% endif %}
+
+                    </p>
+
+                </div>
+
+
+                <!-- EMAIL -->
+
+                <div class="dashboard-card">
+
+                    <div class="card-icon">
+                        📧
+                    </div>
+
+                    <h3>
+                        Email Verification
+                    </h3>
+
+
+                    <div
+                        id="emailStatus"
+                        class="status-indicator
+                        {{ 'complete' if email_verified else 'incomplete' }}"
+                    >
+
+                        {{ 'Verified' if email_verified else 'Not Verified' }}
+
+                    </div>
+
+
+                    <p class="card-text">
+
+                        {% if email_verified %}
+
+                            Your email is verified.
+
+                        {% else %}
+
+                            Verify your email to enable
+                            additional authentication.
+
+                        {% endif %}
+
+                    </p>
+
+
+                    {% if not email_verified %}
+
+                        <button
+                            id="sendVerificationBtn"
+                            class="btn btn-primary"
+                            type="button"
+                        >
+                            Send Verification Code
+                        </button>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- INFORMATION -->
+
+            <div class="dashboard-section">
+
+                <h2>
+                    Authentication Information
+                </h2>
+
+
+                <div class="info-grid">
+
+
+                    <div class="info-item">
+
+                        <h4>
+                            How Keystroke Authentication Works
+                        </h4>
+
+                        <p>
+                            The system analyzes your unique
+                            typing rhythm, including key hold
+                            time and the time between consecutive
+                            keystrokes. These behavioral features
+                            are used to build your typing profile.
+                        </p>
+
+                    </div>
+
+
+                    <div class="info-item">
+
+                        <h4>
+                            Security Features
+                        </h4>
+
+                        <ul>
+
+                            <li>
+                                Password verification
+                            </li>
+
+                            <li>
+                                Secure password hashing
+                            </li>
+
+                            <li>
+                                Behavioral biometrics
+                            </li>
+
+                            <li>
+                                Machine learning anomaly detection
+                            </li>
+
+                            <li>
+                                Session authentication
+                            </li>
+
+                            <li>
+                                Optional email verification
+                            </li>
+
+                        </ul>
+
+                    </div>
+
+
+                    <div class="info-item">
+
+                        <h4>
+                            Typing Tips
+                        </h4>
+
+                        <ul>
+
+                            <li>
+                                Use the same keyboard when possible
+                            </li>
+
+                            <li>
+                                Type naturally
+                            </li>
+
+                            <li>
+                                Maintain a consistent typing style
+                            </li>
+
+                            <li>
+                                Avoid intentionally changing your speed
+                            </li>
+
+                        </ul>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="dashboard-actions">
+
+                <a
+                    href="/logout"
+                    class="btn btn-secondary"
+                >
+                    Logout
+                </a>
+
+
+                {% if not enrolled %}
+
+                    <a
+                        href="/enroll"
+                        class="btn btn-primary"
+                    >
+                        Continue Enrollment
+                    </a>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</main>
+
+
+<footer class="footer">
+
+    <div class="container">
+
+        <p>
+            &copy; 2026 Keystroke MFA.
+            Behavioral Biometrics Authentication.
+        </p>
+
+    </div>
+
+</footer>
+
+
+<!-- =========================================================
+     EMAIL VERIFICATION MODAL
+========================================================= -->
+
+<div
+    id="verificationModal"
+    class="modal hidden"
+>
+
+    <div class="modal-content">
+
+        <div class="modal-header">
+
+            <h3>
+                Verify Your Email
+            </h3>
+
+            <button
+                id="closeModalBtn"
+                class="close-modal"
+                type="button"
+                aria-label="Close"
+            >
+                &times;
+            </button>
+
+        </div>
+
+
+        <div class="modal-body">
+
+            <p>
+                Enter the 6-digit verification code.
+            </p>
+
+
+            <input
+                type="text"
+                id="verificationCode"
+                maxlength="6"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="123456"
+            >
+
+
+            <button
+                id="verifyEmailBtn"
+                class="btn btn-primary"
+                type="button"
+            >
+                Verify Email
+            </button>
+
+
+            <div
+                id="testingCode"
+                class="testing-code"
+                style="display:none;"
+            ></div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div
+    id="notification"
+    class="notification"
+    style="display:none;"
+></div>
+
+
+<script>
+
+// ============================================================
+// ELEMENTS
+// ============================================================
+
+const modal =
+    document.getElementById(
+        "verificationModal"
+    );
+
+const closeModalBtn =
+    document.getElementById(
+        "closeModalBtn"
+    );
+
+const sendVerificationBtn =
+    document.getElementById(
+        "sendVerificationBtn"
+    );
+
+const verifyEmailBtn =
+    document.getElementById(
+        "verifyEmailBtn"
+    );
+
+const verificationCode =
+    document.getElementById(
+        "verificationCode"
+    );
+
+const testingCode =
+    document.getElementById(
+        "testingCode"
+    );
+
+
+// ============================================================
+// NOTIFICATION
+// ============================================================
+
+function showNotification(
+    message,
+    type
+) {
+
+    const notification =
+        document.getElementById(
+            "notification"
+        );
+
+    notification.textContent =
+        message;
+
+    notification.className =
+        "notification " + type;
+
+    notification.style.display =
+        "block";
+
+
+    setTimeout(
+        function() {
+
+            notification.style.display =
+                "none";
+
+        },
+        4000
+    );
+
+}
+
+
+// ============================================================
+// CLOSE MODAL
+// ============================================================
+
+closeModalBtn.addEventListener(
+    "click",
+    function() {
+
+        modal.classList.add(
+            "hidden"
+        );
+
+        verificationCode.value =
+            "";
+
+        testingCode.style.display =
+            "none";
+
+    }
+);
+
+
+// ============================================================
+// CLICK OUTSIDE MODAL
+// ============================================================
+
+modal.addEventListener(
+    "click",
+    function(event) {
+
+        if (
+            event.target === modal
+        ) {
+
+            modal.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// ESC KEY
+// ============================================================
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        if (
+            event.key === "Escape"
+        ) {
+
+            modal.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// SEND VERIFICATION
+// ============================================================
+
+if (sendVerificationBtn) {
+
+    sendVerificationBtn.addEventListener(
+        "click",
+        async function() {
+
+            sendVerificationBtn.disabled =
+                true;
+
+            sendVerificationBtn.textContent =
+                "Sending...";
+
+
+            try {
+
+                const response =
+                    await fetch(
+                        "/send-verification",
+                        {
+                            method:
+                                "POST",
+
+                            headers: {
+                                "Content-Type":
+                                    "application/json"
+                            }
+                        }
+                    );
+
+
+                const data =
+                    await response.json();
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        data.error ||
+                        "Unable to send verification code."
+                    );
+
+                }
+
+
+                modal.classList.remove(
+                    "hidden"
+                );
+
+
+                verificationCode.focus();
+
+
+                /*
+                 * Development mode:
+                 * backend returns the OTP.
+                 */
+
+                if (data.code) {
+
+                    testingCode.textContent =
+                        "Development OTP: " +
+                        data.code;
+
+                    testingCode.style.display =
+                        "block";
+
+                } else {
+
+                    testingCode.style.display =
+                        "none";
+
+                }
+
+
+                showNotification(
+                    data.message ||
+                    "Verification code generated.",
+                    "success"
+                );
+
+            }
+
+            catch (error) {
+
+                showNotification(
+                    error.message,
+                    "error"
+                );
+
+            }
+
+
+            sendVerificationBtn.disabled =
+                false;
+
+            sendVerificationBtn.textContent =
+                "Send Verification Code";
+
+        }
+    );
+
+}
+
+
+// ============================================================
+// VERIFY EMAIL
+// ============================================================
+
+verifyEmailBtn.addEventListener(
+    "click",
+    async function() {
+
+        const code =
+            verificationCode.value.trim();
+
+
+        if (
+            !/^\d{6}$/.test(code)
+        ) {
+
+            showNotification(
+                "Enter a valid 6-digit OTP.",
+                "error"
+            );
+
+            return;
+
+        }
+
+
+        verifyEmailBtn.disabled =
+            true;
+
+        verifyEmailBtn.textContent =
+            "Verifying...";
+
+
+        try {
+
+            const response =
+                await fetch(
+                    "/verify-email",
+                    {
+                        method:
+                            "POST",
+
+                        headers: {
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                otp_code: code
+                            })
+                    }
+                );
+
+
+            const data =
+                await response.json();
+
+
+            if (!response.ok) {
+
+                throw new Error(
+                    data.error ||
+                    "Verification failed."
+                );
+
+            }
+
+
+            showNotification(
+                "Email verified successfully!",
+                "success"
+            );
+
+
+            modal.classList.add(
+                "hidden"
+            );
+
+
+            setTimeout(
+                function() {
+
+                    window.location.reload();
+
+                },
+                1000
+            );
+
+        }
+
+        catch (error) {
+
+            showNotification(
+                error.message,
+                "error"
+            );
+
+        }
+
+
+        verifyEmailBtn.disabled =
+            false;
+
+        verifyEmailBtn.textContent =
+            "Verify Email";
+
+    }
+);
+
+</script>
+
+</body>
+
+</html>
